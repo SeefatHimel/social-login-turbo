@@ -6,77 +6,38 @@ import { Button } from "antd";
 import GetCookie from "../hooks/getCookie";
 import RemoveCookie from "../hooks/removeCookie";
 import SetCookie from "../hooks/setCookie";
-// const clientId =
-//   "855361554866-s7p0pluushdetqk6rc3fvlnchtt33v8p.apps.googleusercontent.com";
 
-const Logout = ({ setUser, setCode, setReload }: any) => {
+const Logout = () => {
+  const navigate = useNavigate();
   const [useData, setUseData] = useState<any>();
-  // async function callBackend() {
-  //   try {
-  //     const response = await axios.get("http://localhost:3000/logout");
-  //     console.log("XXXXXXXXX", response);
-  //     return response;
-  //   } catch (error) {
-  //     console.error(error);
-  //   }
-  // }
-  async function getTTokens(code: any) {
-    try {
-      const response = await axios.get("http://localhost:3000/login", {
-        params: { code: code },
-        withCredentials: true,
-      });
-      console.log("XXXXXXXXX", response.data);
-      return response.data;
-    } catch (error) {
-      console.error(error);
-    }
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const [searchParams] = useSearchParams();
+
   const removeCookies = () => {
     RemoveCookie("accessToken");
     RemoveCookie("refreshToken");
     console.log("Cookies Removed");
   };
-  async function getData() {
+  const logOut = () => {
+    removeCookies();
+    navigate("/login");
+  };
+
+  const getTokens = async () => {
     try {
-      const accessToken = GetCookie("accessToken");
-      const refreshToken = GetCookie("refreshToken");
-
-      const response = await axios.get("http://localhost:3000/getData", {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        // withCredentials: true,
+      const refreshToken = await GetCookie("refreshToken");
+      if (refreshToken) return;
+      const code = await searchParams.get("code");
+      const response = await axios.get("http://localhost:3000/login", {
+        params: { code: code },
+        withCredentials: true,
       });
-      console.log("data ", response.data);
-      setUseData(response.data[0]);
-    } catch (error: any) {
-      if (error?.response?.status === 403) {
-        await getAccessToken();
-        getData();
-      }
-      console.error(error?.response?.status);
+      navigate("/");
+      console.log("XXXXXXXXX", response.data);
+      return response.data;
+    } catch (error) {
+      console.error(error);
     }
-  }
-  async function logTokens() {
-    // const accessToken = Cookies.get("accessToken");
-    const accessToken = GetCookie("accessToken");
-    const refreshToken = GetCookie("refreshToken");
-    console.log("accessToken", accessToken);
-    console.log("refreshToken", refreshToken);
-
-    // try {
-    //   const response = await axios.get("http://localhost:3000/getData");
-    //   console.log("XDDDDDDDDDDDDD", response.data);
-    //   setUseData(response.data);
-    //   return response.data;
-    // } catch (error) {
-    //   console.error(error);
-    // }
-  }
-
-  const [searchParams, setSearchParams] = useSearchParams();
-  const getTokkens = async () => {
-    const res = await getTTokens(searchParams.get("code"));
-    console.log("_--------= ", res);
   };
   const getAccessToken = async () => {
     RemoveCookie("accessToken");
@@ -93,17 +54,35 @@ const Logout = ({ setUser, setCode, setReload }: any) => {
     console.log(response);
   };
 
-  const navigate = useNavigate();
-  const logOut = () => {
-    removeCookies();
-    navigate("/login");
-  };
+  async function getData() {
+    try {
+      const accessToken = GetCookie("accessToken");
+      const response = await axios.get("http://localhost:3000/getData", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      console.log("data ", response.data);
+      setUseData(response.data[0]);
+    } catch (error: any) {
+      if (error?.response?.status === 403) {
+        await getAccessToken();
+        getData();
+      }
+      console.error(error?.response?.status);
+    }
+  }
+  async function logTokens() {
+    const accessToken = GetCookie("accessToken");
+    const refreshToken = GetCookie("refreshToken");
+    console.log("accessToken", accessToken);
+    console.log("refreshToken", refreshToken);
+  }
 
   useEffect(() => {
     if (!GetCookie("refreshToken")) {
-      getTokkens();
+      getTokens();
     }
-  }, [useData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div>
@@ -118,7 +97,7 @@ const Logout = ({ setUser, setCode, setReload }: any) => {
       <div className="flex justify-between w-2/3 mx-auto pb-6">
         {/* <Button
           type="primary"
-          onClick={() => getTokkens()}
+          onClick={() => getTokens()}
           className="text-blue-800 bg-orange-300"
         >
           Get tokens
