@@ -18,7 +18,10 @@ const Logout = () => {
     RemoveCookie("refreshToken");
     console.log("Cookies Removed");
   };
-  const logOut = () => {
+  const logOut = async () => {
+    try {
+      const response = await axios.post("http://localhost:3000/logout");
+    } catch (error) {}
     removeCookies();
     navigate("/login");
   };
@@ -26,8 +29,8 @@ const Logout = () => {
   const getTokens = async () => {
     try {
       const refreshToken = await GetCookie("refreshToken");
-      if (refreshToken) return;
       const code = await searchParams.get("code");
+      if (refreshToken && !code) return;
       const response = await axios.get("http://localhost:3000/login", {
         params: { code: code },
         withCredentials: true,
@@ -37,6 +40,8 @@ const Logout = () => {
       return response.data;
     } catch (error) {
       console.error(error);
+      removeCookies();
+      navigate("/login");
     }
   };
   const getAccessToken = async () => {

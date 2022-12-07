@@ -8,8 +8,8 @@ const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 
-const User = require("./user");
-const UserTokens = require("./userTokens");
+const User = require("./models/user");
+const UserTokens = require("./models/userTokens");
 const keys = require("./data/oauth2.keys.json");
 
 const app = express();
@@ -21,6 +21,15 @@ mongoose.connect(
   },
   (e) => console.error(e)
 );
+
+const corsOptions = {
+  origin: true, //included origin as true
+
+  credentials: true, //included credentials as true
+};
+
+app.use(cors(corsOptions));
+app.use(express.json());
 
 async function saveToDB(name, email) {
   const oldUser = await User.where("email").equals(email);
@@ -55,15 +64,6 @@ async function saveRefreshToken(email, refresh_token) {
     }
   }
 }
-const corsOptions = {
-  origin: true, //included origin as true
-
-  credentials: true, //included credentials as true
-};
-
-app.use(cors(corsOptions));
-app.use(express.json());
-
 app.get("/", (req, res) => {
   res.send({ hello: "hello" });
 });
@@ -73,15 +73,13 @@ const oAuth2Client = new OAuth2Client(
   keys.web.redirect_uris[0]
 );
 
-async function getTokens(code) {
-  // console.log("98 ", code);
-  // console.log("99 ", oAuth2Client);
-  const r = await oAuth2Client.getToken(code);
-  // Make sure to set the credentials on the OAuth2 client.
-  // console.log("101 ", r);
-  oAuth2Client.setCredentials(r.tokens);
-  console.info("Tokens acquired.");
-  return oAuth2Client;
+async function getTokens(code, res) {
+  if (code) {
+    const r = await oAuth2Client.getToken(code);
+    oAuth2Client.setCredentials(r.tokens);
+    console.info("Tokens acquired.");
+    return true;
+  } else return false;
 }
 
 function getLink() {
@@ -109,13 +107,12 @@ async function getUserData(access_token) {
   const oauth2Client2 = new google.auth.OAuth2(); // create new auth client
   oauth2Client2.setCredentials({
     access_token: access_token,
-  }); // use the new auth client with the access_token
+  });
   const oauth2 = google.oauth2({
     auth: oauth2Client2,
     version: "v2",
   });
-  const { data } = await oauth2.userinfo.get(); // get user info
-
+  const { data } = await oauth2.userinfo.get();
   return data;
 }
 app.post("/token", (req, res) => {
@@ -132,16 +129,16 @@ app.post("/token", (req, res) => {
 });
 app.get("/getLink", (req, res) => {
   const authorizeUrl = getLink();
-  // console.log("**** ", authorizeUrl);
   res.send(authorizeUrl);
 });
 
 app.get("/login", async (req, res) => {
   if (!oAuth2Client?.credentials?.access_token) {
-    const tokens = await getTokens(req.query.code);
-    // console.log("**** ", tokens);
+    const tokensFound = await getTokens(req.query.code, res);
+    if (!tokensFound) res.sendStatus(401);
   }
   const userData = await getUserData(oAuth2Client?.credentials?.access_token);
+  console.log(">>>>>>>>", userData);
   if (userData) {
     try {
       await saveToDB(userData?.name, userData?.email);
@@ -160,7 +157,11 @@ app.get("/login", async (req, res) => {
       saveRefreshToken(userData?.email, refreshToken);
       res.cookie("accessToken", accessToken);
       res.cookie("refreshToken", refreshToken);
-      res.send({ accessToken: accessToken, refreshToken: refreshToken });
+      res.send({
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        userData: userData,
+      });
     } catch (error) {
       console.error(error.message);
       res.send([]);
@@ -188,20 +189,6 @@ function authenticateToken(req, res, next) {
     next();
   });
 }
-// app.get("/getToken", async (req, res) => {
-//   console.log("152", oAuth2Client);
-//   if (oAuth2Client?.credentials?.access_token) {
-//     res.send(oAuth2Client.credentials);
-//   } else {
-//     const tokens = await getTokens(req.query.code);
-//     // console.log("**** ", tokens);
-//     res.send(tokens);
-//   }
-// });
-
-// app.get("/auth", (req, res) => {
-//   res.send(req.query);
-// });
 
 async function getDataFromDB() {
   const allData = await User.find();
@@ -214,6 +201,21 @@ app.get("/getData", authenticateToken, async (req, res) => {
   console.log("dt>>> ", dt);
   // console.log(">>>>>>>", dt?.name, dt?.email);
   res.send(dt);
+});
+
+app.post("/logout", async (req, res) => {
+  const tokens = await UserTokens.find().clone();
+  if (tokens[0]) {
+    try {
+      await UserTokens.deleteMany({});
+      console.log("Refresh Tokens Deleted");
+      res.status(200);
+    } catch (e) {
+      console.log(e.message);
+      res.status(400);
+    }
+  } else res.status(200);
+  res.end();
 });
 
 app.listen(3000, () => {
