@@ -55,8 +55,13 @@ async function saveRefreshToken(email, refresh_token) {
     }
   }
 }
+const corsOptions = {
+  origin: true, //included origin as true
 
-app.use(cors());
+  credentials: true, //included credentials as true
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -97,10 +102,10 @@ function generateAccessToken(user, email) {
       email,
     },
     process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: "15s" }
+    { expiresIn: "25s" }
   );
 }
-async function getData(access_token) {
+async function getUserData(access_token) {
   const oauth2Client2 = new google.auth.OAuth2(); // create new auth client
   oauth2Client2.setCredentials({
     access_token: access_token,
@@ -113,7 +118,18 @@ async function getData(access_token) {
 
   return data;
 }
-
+app.post("/token", (req, res) => {
+  const refreshToken = req.body.token;
+  console.log("123", refreshToken);
+  if (refreshToken == null) return res.sendStatus(401);
+  const refreshTokens = UserTokens.where("refresh_token").equals(refreshToken);
+  if (refreshTokens[0]) return res.sendStatus(403);
+  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    const accessToken = generateAccessToken({ name: user.name });
+    res.json({ accessToken: accessToken });
+  });
+});
 app.get("/getLink", (req, res) => {
   const authorizeUrl = getLink();
   // console.log("**** ", authorizeUrl);
@@ -125,7 +141,7 @@ app.get("/login", async (req, res) => {
     const tokens = await getTokens(req.query.code);
     // console.log("**** ", tokens);
   }
-  const userData = await getData(oAuth2Client?.credentials?.access_token);
+  const userData = await getUserData(oAuth2Client?.credentials?.access_token);
   if (userData) {
     try {
       await saveToDB(userData?.name, userData?.email);
@@ -142,6 +158,8 @@ app.get("/login", async (req, res) => {
       );
       console.log({ accessToken: accessToken, refreshToken: refreshToken });
       saveRefreshToken(userData?.email, refreshToken);
+      res.cookie("accessToken", accessToken);
+      res.cookie("refreshToken", refreshToken);
       res.send({ accessToken: accessToken, refreshToken: refreshToken });
     } catch (error) {
       console.error(error.message);
@@ -150,6 +168,26 @@ app.get("/login", async (req, res) => {
   }
 });
 
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  console.log("authHeader", authHeader);
+  const token = authHeader && authHeader.split(" ")[1];
+  console.log("token", token);
+
+  if (token == null) return res.sendStatus(401);
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, data) => {
+    console.log("err", err);
+    console.log("data", data);
+    console.log("req.user", req.user);
+    if (err) return res.sendStatus(403);
+    req.user = data.user.user;
+    // console.log("req", req);
+    console.log("req.user", req.user);
+
+    next();
+  });
+}
 // app.get("/getToken", async (req, res) => {
 //   console.log("152", oAuth2Client);
 //   if (oAuth2Client?.credentials?.access_token) {
@@ -165,10 +203,16 @@ app.get("/login", async (req, res) => {
 //   res.send(req.query);
 // });
 
-app.get("/getData", async (req, res) => {
-  const dt = await getData();
+async function getDataFromDB() {
+  const allData = await User.find();
+  return allData;
+}
+
+app.get("/getData", authenticateToken, async (req, res) => {
+  console.log("in data");
+  const dt = await getDataFromDB();
+  console.log("dt>>> ", dt);
   // console.log(">>>>>>>", dt?.name, dt?.email);
-  await saveToDB(dt?.name, dt?.email);
   res.send(dt);
 });
 
