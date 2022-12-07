@@ -2,10 +2,14 @@ const { OAuth2Client } = require("google-auth-library");
 const { google } = require("googleapis");
 const mongoose = require("mongoose");
 
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 
 const User = require("./user");
+const UserTokens = require("./userTokens");
 const keys = require("./data/oauth2.keys.json");
 
 const app = express();
@@ -28,7 +32,26 @@ async function saveToDB(name, email) {
       const user = await User.create({ name: name, email: email });
       console.log("User Added ", user);
     } catch (e) {
-      console.log(e.mesaage);
+      console.log(e.message);
+    }
+  }
+}
+async function saveRefreshToken(email, refresh_token) {
+  const oldToken = await UserTokens.where("refresh_token").equals(
+    refresh_token
+  );
+  console.log(oldToken);
+  if (oldToken[0]) {
+    console.log("Token already Exists");
+  } else {
+    try {
+      const newToken = await UserTokens.create({
+        email: email,
+        refresh_token: refresh_token,
+      });
+      console.log("Token Added ", newToken);
+    } catch (e) {
+      console.log(e.message);
     }
   }
 }
@@ -67,21 +90,28 @@ function getLink() {
   });
   return authorizeUrl;
 }
+function generateAccessToken(user, email) {
+  return jwt.sign(
+    {
+      user,
+      email,
+    },
+    process.env.ACCESS_TOKEN_SECRET,
+    { expiresIn: "15s" }
+  );
+}
+async function getData(access_token) {
+  const oauth2Client2 = new google.auth.OAuth2(); // create new auth client
+  oauth2Client2.setCredentials({
+    access_token: access_token,
+  }); // use the new auth client with the access_token
+  const oauth2 = google.oauth2({
+    auth: oauth2Client2,
+    version: "v2",
+  });
+  const { data } = await oauth2.userinfo.get(); // get user info
 
-async function getData() {
-  if (oAuth2Client?.credentials?.access_token) {
-    const oauth2Client2 = new google.auth.OAuth2(); // create new auth client
-    oauth2Client2.setCredentials({
-      access_token: oAuth2Client?.credentials?.access_token,
-    }); // use the new auth client with the access_token
-    const oauth2 = google.oauth2({
-      auth: oauth2Client2,
-      version: "v2",
-    });
-    const { data } = await oauth2.userinfo.get(); // get user info
-    // console.log(data);
-    return data;
-  } else return null;
+  return data;
 }
 
 app.get("/getLink", (req, res) => {
@@ -90,20 +120,50 @@ app.get("/getLink", (req, res) => {
   res.send(authorizeUrl);
 });
 
-app.get("/getToken", async (req, res) => {
-  console.log("152", oAuth2Client);
-  if (oAuth2Client?.credentials?.access_token) {
-    res.send(oAuth2Client.credentials);
-  } else {
+app.get("/login", async (req, res) => {
+  if (!oAuth2Client?.credentials?.access_token) {
     const tokens = await getTokens(req.query.code);
     // console.log("**** ", tokens);
-    res.send(tokens);
+  }
+  const userData = await getData(oAuth2Client?.credentials?.access_token);
+  if (userData) {
+    try {
+      await saveToDB(userData?.name, userData?.email);
+      const accessToken = generateAccessToken({
+        user: userData?.name,
+        email: userData?.email,
+      });
+      const refreshToken = jwt.sign(
+        {
+          user: userData?.name,
+          email: userData?.email,
+        },
+        process.env.REFRESH_TOKEN_SECRET
+      );
+      console.log({ accessToken: accessToken, refreshToken: refreshToken });
+      saveRefreshToken(userData?.email, refreshToken);
+      res.send({ accessToken: accessToken, refreshToken: refreshToken });
+    } catch (error) {
+      console.error(error.message);
+      res.send([]);
+    }
   }
 });
 
-app.get("/auth", (req, res) => {
-  res.send(req.query);
-});
+// app.get("/getToken", async (req, res) => {
+//   console.log("152", oAuth2Client);
+//   if (oAuth2Client?.credentials?.access_token) {
+//     res.send(oAuth2Client.credentials);
+//   } else {
+//     const tokens = await getTokens(req.query.code);
+//     // console.log("**** ", tokens);
+//     res.send(tokens);
+//   }
+// });
+
+// app.get("/auth", (req, res) => {
+//   res.send(req.query);
+// });
 
 app.get("/getData", async (req, res) => {
   const dt = await getData();
@@ -113,5 +173,5 @@ app.get("/getData", async (req, res) => {
 });
 
 app.listen(3000, () => {
-  console.log("server ruuning");
+  console.log("server running");
 });

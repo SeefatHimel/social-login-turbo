@@ -19,7 +19,7 @@ const Logout = ({ setUser, setCode, setReload }: any) => {
   // }
   async function getTTokens(code: any) {
     try {
-      const response = await axios.get("http://localhost:3000/getToken", {
+      const response = await axios.get("http://localhost:3000/login", {
         params: { code: code },
       });
       console.log("XXXXXXXXX", response.data);
