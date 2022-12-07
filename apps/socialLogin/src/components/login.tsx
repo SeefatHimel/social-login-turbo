@@ -8,19 +8,7 @@ import { UserOutlined, MailOutlined, KeyOutlined } from "@ant-design/icons";
 
 // const clientId =
 //   "855361554866-s7p0pluushdetqk6rc3fvlnchtt33v8p.apps.googleusercontent.com";
-export async function callBackend(code: string) {
-  // clubId: string,
-  // status?: string
-  try {
-    const response = await axios.get("http://localhost:3000/himel", {
-      params: { code },
-    });
-    console.log("XXXXXXXXX", response);
-    return response;
-  } catch (error) {
-    console.error(error);
-  }
-}
+
 export async function getAuthLink() {
   try {
     const response = await axios.get("http://localhost:3000/getLink");
@@ -32,20 +20,6 @@ export async function getAuthLink() {
 }
 
 const Login = ({ user, setUser, setCode }: any) => {
-  // const onSuccess = async (response: any) => {
-  //   console.log("Log in Success ! Current User : ", response);
-  //   if (response?.code) {
-  //     console.log(">>", response.code);
-  //     // setCode(response.code);
-  //   }
-  //   console.log(user?.name);
-
-  //   if (!user?.name) {
-  //     const res = await callBackend(response.code);
-  //     console.log("$$$$$$$$$$$$$$", res);
-  //     window.open(res?.data);
-  //   }
-  // };
   const getLink = async () => {
     const res = await getAuthLink();
     console.log("$$$$$$$$$$$$$$", res);

@@ -1,12 +1,37 @@
-const keys = require("./data/oauth2.keys.json");
 const { OAuth2Client } = require("google-auth-library");
 const { google } = require("googleapis");
+const mongoose = require("mongoose");
 
 const express = require("express");
-
 const cors = require("cors");
 
+const User = require("./user");
+const keys = require("./data/oauth2.keys.json");
+
 const app = express();
+
+mongoose.connect(
+  "mongodb://localhost/socialLogin",
+  () => {
+    console.log("mongodb connected");
+  },
+  (e) => console.error(e)
+);
+
+async function saveToDB(name, email) {
+  const oldUser = await User.where("email").equals(email);
+  console.log(oldUser[0]);
+  if (oldUser[0]) {
+    console.log("User already Exists");
+  } else {
+    try {
+      const user = await User.create({ name: name, email: email });
+      console.log("User Added ", user);
+    } catch (e) {
+      console.log(e.mesaage);
+    }
+  }
+}
 
 app.use(cors());
 app.use(express.json());
@@ -21,11 +46,11 @@ const oAuth2Client = new OAuth2Client(
 );
 
 async function getTokens(code) {
-  console.log("98 ", code);
-  console.log("99 ", oAuth2Client);
+  // console.log("98 ", code);
+  // console.log("99 ", oAuth2Client);
   const r = await oAuth2Client.getToken(code);
   // Make sure to set the credentials on the OAuth2 client.
-  console.log("101 ", r);
+  // console.log("101 ", r);
   oAuth2Client.setCredentials(r.tokens);
   console.info("Tokens acquired.");
   return oAuth2Client;
@@ -54,14 +79,14 @@ async function getData() {
       version: "v2",
     });
     const { data } = await oauth2.userinfo.get(); // get user info
-    console.log(data);
+    // console.log(data);
     return data;
   } else return null;
 }
 
 app.get("/getLink", (req, res) => {
   const authorizeUrl = getLink();
-  console.log("**** ", authorizeUrl);
+  // console.log("**** ", authorizeUrl);
   res.send(authorizeUrl);
 });
 
@@ -71,13 +96,9 @@ app.get("/getToken", async (req, res) => {
     res.send(oAuth2Client.credentials);
   } else {
     const tokens = await getTokens(req.query.code);
-    console.log("**** ", tokens);
+    // console.log("**** ", tokens);
     res.send(tokens);
   }
-});
-app.post("/himel", (req, res) => {
-  console.log(req.body);
-  res.send(req.body);
 });
 
 app.get("/auth", (req, res) => {
@@ -86,6 +107,8 @@ app.get("/auth", (req, res) => {
 
 app.get("/getData", async (req, res) => {
   const dt = await getData();
+  // console.log(">>>>>>>", dt?.name, dt?.email);
+  await saveToDB(dt?.name, dt?.email);
   res.send(dt);
 });
 

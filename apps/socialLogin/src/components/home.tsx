@@ -1,4 +1,3 @@
-import { Card } from "antd";
 import Logout from "./logout";
 
 const Home = () => {

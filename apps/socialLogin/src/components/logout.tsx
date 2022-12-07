@@ -1,8 +1,6 @@
 import axios from "axios";
 import { useState } from "react";
 import { LogoutOutlined } from "@ant-design/icons";
-
-// import { GoogleLogout } from "react-google-login";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "antd";
 // const clientId =
@@ -10,15 +8,15 @@ import { Button } from "antd";
 
 const Logout = ({ setUser, setCode, setReload }: any) => {
   const [useData, setUseData] = useState<any>();
-  async function callBackend() {
-    try {
-      const response = await axios.get("http://localhost:3000/logout");
-      console.log("XXXXXXXXX", response);
-      return response;
-    } catch (error) {
-      console.error(error);
-    }
-  }
+  // async function callBackend() {
+  //   try {
+  //     const response = await axios.get("http://localhost:3000/logout");
+  //     console.log("XXXXXXXXX", response);
+  //     return response;
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // }
   async function getTTokens(code: any) {
     try {
       const response = await axios.get("http://localhost:3000/getToken", {
@@ -50,13 +48,6 @@ const Logout = ({ setUser, setCode, setReload }: any) => {
 
   const navigate = useNavigate();
 
-  // const onSuccess = () => {
-  //   console.log("Loged out Successfully");
-  //   callBackend();
-  //   setUser([]);
-  //   setReload(true);
-  //   navigate("/login");
-  // };
   return (
     <div>
       <Button
