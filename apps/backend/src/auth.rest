@@ -1,0 +1,6 @@
+POST http://localhost:8080/token
+Content-Type: application/json
+
+{
+  "token": "hello"
+}
