@@ -1,9 +1,38 @@
 import React from "react";
 import { Button, Checkbox, Form, Input } from "antd";
+import axios from "axios";
+import { toast } from "react-toastify";
+import SetCookie from "../../../hooks/setCookie";
+import { useNavigate } from "react-router-dom";
 
 const LoginForm: React.FC = () => {
-  const onFinish = (values: any) => {
+  const navigate = useNavigate();
+  const signIn = async (values: any) => {
+    console.log(values);
+    try {
+      const { data } = await axios.post("http://localhost:3000/signIn", {
+        email: values.email,
+        password: values.password,
+      });
+      console.log(data);
+      SetCookie("accessToken", data.accessToken);
+      SetCookie("refreshToken", data.refreshToken);
+      toast.success(data?.message, {
+        containerId: "top-right",
+      });
+      navigate("/home");
+    } catch (error: any) {
+      const { data } = error.response;
+
+      toast.error(data?.message, {
+        containerId: "top-right",
+      });
+    }
+  };
+
+  const onFinish = async (values: any) => {
     console.log("Success:", values);
+    await signIn(values);
   };
 
   const onFinishFailed = (errorInfo: any) => {
@@ -21,11 +50,19 @@ const LoginForm: React.FC = () => {
       autoComplete="off"
     >
       <Form.Item
-        label="Username"
-        name="username"
-        rules={[{ required: true, message: "Please input your username!" }]}
+        label="Email"
+        name="email"
+        rules={[
+          { required: true, message: "Please input your email!" },
+          {
+            type: "email",
+            min: 0,
+            max: 200,
+            message: "Please input a valid email.",
+          },
+        ]}
       >
-        <Input />
+        <Input type="email" />
       </Form.Item>
 
       <Form.Item

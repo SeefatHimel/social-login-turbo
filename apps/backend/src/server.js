@@ -248,6 +248,46 @@ app.post("/signUp", async (req, res) => {
   // res.send(req.body.data);
 });
 
+app.post("/signIn", async (req, res) => {
+  await User.findOne({ email: req.body.email }, function (err, user) {
+    if (user === null) {
+      return res.status(400).send({
+        message: "User not found.",
+      });
+    } else {
+      if (user.validPassword(req.body.password)) {
+        const accessToken = generateAccessToken({
+          user: user?.name,
+          email: user?.email,
+        });
+        const refreshToken = jwt.sign(
+          {
+            user: user?.name,
+            email: user?.email,
+          },
+          process.env.REFRESH_TOKEN_SECRET
+        );
+        console.log({ accessToken: accessToken, refreshToken: refreshToken });
+        saveRefreshToken(user?.email, refreshToken);
+        res.cookie("accessToken", accessToken);
+        res.cookie("refreshToken", refreshToken);
+        // res.send();
+
+        return res.status(201).send({
+          message: "User Logged In",
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+          userData: user,
+        });
+      } else {
+        return res.status(400).send({
+          message: "Wrong Password",
+        });
+      }
+    }
+  }).clone();
+});
+
 async function check_email(email) {
   const oldEmail = await User.where("email").equals(email);
   console.log("oldEmail : ", oldEmail[0]);
