@@ -6,6 +6,7 @@ import { Button } from "antd";
 import GetCookie from "../hooks/getCookie";
 import RemoveCookie from "../hooks/removeCookie";
 import SetCookie from "../hooks/setCookie";
+import { toast } from "react-toastify";
 
 const Logout = () => {
   const navigate = useNavigate();
@@ -20,7 +21,12 @@ const Logout = () => {
   };
   const logOut = async () => {
     try {
-      const response = await axios.post("http://localhost:3000/logout");
+      const { data } = await axios.post("http://localhost:3000/logout");
+      console.log(data);
+
+      toast.success(data.message, {
+        containerId: "top-right",
+      });
     } catch (error) {}
     removeCookies();
     navigate("/login");

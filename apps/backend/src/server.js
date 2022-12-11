@@ -310,13 +310,12 @@ app.post("/logout", async (req, res) => {
     try {
       await UserTokens.deleteMany({});
       console.log("Refresh Tokens Deleted");
-      res.status(200);
+      res.status(200).send({ message: "Logged out!!" });
     } catch (e) {
       console.log(e.message);
-      res.status(400);
+      res.status(400).send({ message: "Error!!" });
     }
-  } else res.status(200);
-  res.end();
+  } else res.status(200).send({ message: "Logged out!!" });
 });
 
 app.listen(3000, () => {
