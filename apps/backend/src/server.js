@@ -100,7 +100,7 @@ function generateAccessToken(user, email) {
       email,
     },
     process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: "25s" }
+    { expiresIn: "120s" }
   );
 }
 async function getUserData(access_token) {
@@ -201,6 +201,67 @@ app.get("/getData", authenticateToken, async (req, res) => {
   console.log("dt>>> ", dt);
   // console.log(">>>>>>>", dt?.name, dt?.email);
   res.send(dt);
+});
+
+async function registerUser(userReq, res) {
+  console.log(userReq);
+  const emailValid = await check_email(userReq.email);
+  if (emailValid) {
+    // Creating empty user object
+    const newUser = new User();
+    newUser.name = userReq.firstName + " " + userReq.lastName;
+    // newUser.firstName = userReq.firstName;
+    // newUser.lastName = userReq.lastName;
+    newUser.email = userReq.email;
+    newUser.password = userReq.password;
+
+    newUser.setPassword(userReq.password);
+
+    // Save newUser object to database
+    try {
+      newUser.save((err, User) => {
+        if (err) {
+          console.log(err);
+          return res.status(400).send({
+            message: "Failed to add user.",
+          });
+        } else {
+          return res.status(201).send({
+            message: "User added successfully.",
+          });
+        }
+      });
+    } catch (error) {
+      console.log(error, "err");
+      return res.status(400).send({
+        message: "Failed to add user.",
+      });
+    }
+  }
+}
+
+app.post("/signUp", async (req, res) => {
+  await registerUser(req.body.data, res);
+  console.log("246", "/signUp", "ok");
+  // res.status(200).send({ message: "User Created !!" });
+
+  // res.send(req.body.data);
+});
+
+async function check_email(email) {
+  const oldEmail = await User.where("email").equals(email);
+  console.log("oldEmail : ", oldEmail[0]);
+  if (oldEmail && oldEmail[0]) return false;
+  return true;
+}
+
+app.post("/register_email", async (req, res) => {
+  console.log("Email > ", req.body.data);
+  const validEmail = await check_email(req.body.data.email);
+  console.log("Valid Email : ", validEmail);
+  if (validEmail) res.status(200).send({ message: "email not in use" });
+  else res.status(403).send({ message: "email already in use" });
+  // res.send(validEmail.name || req.body.email);
 });
 
 app.post("/logout", async (req, res) => {
