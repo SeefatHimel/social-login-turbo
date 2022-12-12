@@ -204,8 +204,9 @@ app.get("/getData", authenticateToken, async (req, res) => {
 });
 
 async function registerUser(userReq, res) {
-  console.log(userReq);
+  console.log("userReq.email", userReq.email);
   const emailValid = await check_email(userReq.email);
+  console.log("Email is", emailValid ? "Valid" : "invalid");
   if (emailValid) {
     // Creating empty user object
     const newUser = new User();
@@ -221,27 +222,30 @@ async function registerUser(userReq, res) {
     try {
       newUser.save((err, User) => {
         if (err) {
-          console.log(err);
+          console.log("225", err);
           return res.status(400).send({
             message: "Failed to add user.",
           });
         } else {
+          console.log("User Creation Successful");
           return res.status(201).send({
             message: "User added successfully.",
           });
         }
       });
     } catch (error) {
-      console.log(error, "err");
+      console.log("err 236", error);
       return res.status(400).send({
         message: "Failed to add user.",
       });
     }
+  } else {
+    return res.status(403).send({ message: "Email already in use or Invalid" });
   }
 }
 
 app.post("/signUp", async (req, res) => {
-  console.log("res.bodyrws", req.body);
+  console.log("res.body", req.body);
   await registerUser(req.body, res);
   console.log("246", "/signUp", "ok");
   // res.status(200).send({ message: "User Created !!" });
