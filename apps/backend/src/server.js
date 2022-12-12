@@ -241,7 +241,7 @@ async function registerUser(userReq, res) {
 }
 
 app.post("/signUp", async (req, res) => {
-  console.log(req.body);
+  console.log("res.bodyrws", req.body);
   await registerUser(req.body, res);
   console.log("246", "/signUp", "ok");
   // res.status(200).send({ message: "User Created !!" });
@@ -297,11 +297,13 @@ async function check_email(email) {
 }
 
 app.post("/register_email", async (req, res) => {
-  console.log("Email > ", req.body.data);
-  const validEmail = await check_email(req.body.data.email);
-  console.log("Valid Email : ", validEmail);
-  if (validEmail) res.status(200).send({ message: "email not in use" });
-  else res.status(403).send({ message: "email already in use" });
+  console.log("Email > ", req.body, req.body.email);
+  if (req?.body?.email) {
+    const validEmail = await check_email(req.body.email);
+    console.log("Valid Email : ", validEmail);
+    if (validEmail) res.status(200).send({ message: "email not in use" });
+    else res.status(403).send({ message: "email already in use" });
+  } else res.status(403).send({ message: "Invalid email" });
   // res.send(validEmail.name || req.body.email);
 });
 

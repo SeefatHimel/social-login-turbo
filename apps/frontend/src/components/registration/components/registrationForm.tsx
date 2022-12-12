@@ -63,9 +63,7 @@ const RegistrationForm: React.FC = () => {
     try {
       // const response =
       await axios.post("http://localhost:3000/register_email", {
-        headers: {},
-        data: { email: `${email}` },
-        Credential: true,
+        email: `${ss ? ss : email}`,
       });
       setEmailStatus("success");
       return true;
