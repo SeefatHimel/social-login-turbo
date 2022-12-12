@@ -241,7 +241,8 @@ async function registerUser(userReq, res) {
 }
 
 app.post("/signUp", async (req, res) => {
-  await registerUser(req.body.data, res);
+  console.log(req.body);
+  await registerUser(req.body, res);
   console.log("246", "/signUp", "ok");
   // res.status(200).send({ message: "User Created !!" });
 
@@ -318,6 +319,7 @@ app.post("/logout", async (req, res) => {
   } else res.status(200).send({ message: "Logged out!!" });
 });
 
-app.listen(3000, () => {
-  console.log("server running");
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log("server running on port", port);
 });

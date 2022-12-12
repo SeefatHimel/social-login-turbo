@@ -21,7 +21,9 @@ const Logout = () => {
   };
   const logOut = async () => {
     try {
-      const { data } = await axios.post("http://localhost:3000/logout");
+      const { data } = await axios.post(
+        `${process.env.REACT_APP_API_URL}/logout}`
+      );
       console.log(data);
 
       toast.success(data.message, {
@@ -37,10 +39,13 @@ const Logout = () => {
       const refreshToken = await GetCookie("refreshToken");
       const code = await searchParams.get("code");
       if (refreshToken && !code) return;
-      const response = await axios.get("http://localhost:3000/login", {
-        params: { code: code },
-        withCredentials: true,
-      });
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_URL}/login}`,
+        {
+          params: { code: code },
+          withCredentials: true,
+        }
+      );
       navigate("/");
       console.log("XXXXXXXXX", response.data);
       return response.data;
@@ -53,9 +58,12 @@ const Logout = () => {
   const getAccessToken = async () => {
     RemoveCookie("accessToken");
     const refreshToken = GetCookie("refreshToken");
-    const response = await axios.post("http://localhost:3000/token", {
-      token: refreshToken,
-    });
+    const response = await axios.post(
+      `${process.env.REACT_APP_API_URL}/token}`,
+      {
+        token: refreshToken,
+      }
+    );
     if (response.data.accessToken)
       SetCookie("accessToken", response.data.accessToken);
     else {
@@ -68,9 +76,12 @@ const Logout = () => {
   async function getData() {
     try {
       const accessToken = GetCookie("accessToken");
-      const response = await axios.get("http://localhost:3000/getData", {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_URL}/getData}`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
       console.log("data ", response.data);
       setUseData(response.data[0]);
     } catch (error: any) {

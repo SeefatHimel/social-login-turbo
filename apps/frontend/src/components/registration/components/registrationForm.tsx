@@ -22,9 +22,7 @@ const RegistrationForm: React.FC = () => {
       };
       // console.log("Success:", values);
       try {
-        const response = await axios.post("http://localhost:3000/signUp", {
-          data: temp,
-        });
+        const response = await axios.post("http://localhost:3000/signUp", temp);
         console.log(response);
         toast.success("User Added", {
           containerId: "top-right",
@@ -64,14 +62,11 @@ const RegistrationForm: React.FC = () => {
     console.log(email);
     try {
       // const response =
-       await axios.post(
-        "http://localhost:3000/register_email",
-        {
-          headers: {},
-          data: { email: `${email}` },
-          Credential: true,
-        }
-      );
+      await axios.post("http://localhost:3000/register_email", {
+        headers: {},
+        data: { email: `${email}` },
+        Credential: true,
+      });
       setEmailStatus("success");
       return true;
     } catch (error) {
