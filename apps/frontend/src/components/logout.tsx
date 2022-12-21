@@ -1,12 +1,9 @@
-import axios from "axios";
 import { useState, useEffect } from "react";
 import { LogoutOutlined } from "@ant-design/icons";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "antd";
 import GetCookie from "../hooks/getCookie";
-import RemoveCookie from "../hooks/removeCookie";
-import SetCookie from "../hooks/setCookie";
-import { toast } from "react-toastify";
+import { GetData, GetTokens, LogOut } from "../APIs";
 
 const Logout = () => {
   const navigate = useNavigate();
@@ -14,72 +11,24 @@ const Logout = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const [searchParams] = useSearchParams();
 
-  const removeCookies = () => {
-    RemoveCookie("accessToken");
-    RemoveCookie("refreshToken");
-    console.log("Cookies Removed");
-  };
-  const logOut = async () => {
-    try {
-      const { data } = await axios.post("http://localhost:3000/logout");
-      console.log(data);
-
-      toast.success(data.message, {
-        containerId: "top-right",
-      });
-    } catch (error) {}
-    removeCookies();
-    navigate("/login");
+  const handleLogOut = async () => {
+    if (await LogOut()) navigate("/login");
   };
 
   const getTokens = async () => {
-    try {
-      const refreshToken = await GetCookie("refreshToken");
-      const code = await searchParams.get("code");
-      if (refreshToken && !code) return;
-      const response = await axios.get("http://localhost:3000/login", {
-        params: { code: code },
-        withCredentials: true,
-      });
-      navigate("/");
-      console.log("XXXXXXXXX", response.data);
-      return response.data;
-    } catch (error) {
-      console.error(error);
-      removeCookies();
-      navigate("/login");
-    }
-  };
-  const getAccessToken = async () => {
-    RemoveCookie("accessToken");
-    const refreshToken = GetCookie("refreshToken");
-    const response = await axios.post("http://localhost:3000/token", {
-      token: refreshToken,
-    });
-    if (response.data.accessToken)
-      SetCookie("accessToken", response.data.accessToken);
-    else {
-      console.log("logout");
-      logOut();
-    }
-    console.log(response);
+    const refreshToken = await GetCookie("refreshToken");
+
+    const code = await searchParams.get("code");
+    if (refreshToken && !code) return;
+
+    const res = await GetTokens(code!);
+    if (res) navigate("/");
+    else navigate("/login");
   };
 
   async function getData() {
-    try {
-      const accessToken = GetCookie("accessToken");
-      const response = await axios.get("http://localhost:3000/getData", {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      console.log("data ", response.data);
-      setUseData(response.data[0]);
-    } catch (error: any) {
-      if (error?.response?.status === 403) {
-        await getAccessToken();
-        getData();
-      }
-      console.error(error?.response?.status);
-    }
+    const res: any = await GetData();
+    if (res && res[0]) setUseData(res[0]);
   }
   async function logTokens() {
     const accessToken = GetCookie("accessToken");
@@ -101,7 +50,7 @@ const Logout = () => {
         type="primary"
         danger
         className="fixed right-2 top-2"
-        onClick={() => logOut()}
+        onClick={() => handleLogOut()}
       >
         <LogoutOutlined /> Log out
       </Button>

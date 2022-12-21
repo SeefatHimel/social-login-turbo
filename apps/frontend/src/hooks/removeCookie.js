@@ -4,4 +4,9 @@ const RemoveCookie = (cookieName, value) => {
   Cookie.remove(cookieName);
 };
 
-export default RemoveCookie;
+const RemoveAllCookies = () => {
+  RemoveCookie("accessToken");
+  RemoveCookie("refreshToken");
+  console.log("Cookies Removed");
+};
+export { RemoveCookie, RemoveAllCookies };
