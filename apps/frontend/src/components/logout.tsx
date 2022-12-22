@@ -55,14 +55,6 @@ const Logout = () => {
         <LogoutOutlined /> Log out
       </Button>
       <div className="flex justify-between w-2/3 mx-auto pb-6">
-        {/* <Button
-          type="primary"
-          onClick={() => getTokens()}
-          className="text-blue-800 bg-orange-300"
-        >
-          Get tokens
-        </Button> */}
-
         <Button
           type="primary"
           onClick={() => logTokens()}
@@ -70,13 +62,6 @@ const Logout = () => {
         >
           Log Cookies
         </Button>
-        {/* <Button
-          type="primary"
-          onClick={() => removeCookies()}
-          className="text-blue-800 bg-orange-300"
-        >
-          Remove Cookies
-        </Button> */}
         <Button
           type="primary"
           onClick={() => getData()}
@@ -84,14 +69,6 @@ const Logout = () => {
         >
           Get Data
         </Button>
-
-        {/* <Button
-          type="primary"
-          onClick={() => getAccessToken()}
-          className="text-blue-800 bg-orange-300"
-        >
-          Get accT via rfsT
-        </Button> */}
       </div>
       {useData && (
         <div>

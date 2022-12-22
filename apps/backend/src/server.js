@@ -123,7 +123,10 @@ app.post("/token", (req, res) => {
   if (refreshTokens[0]) return res.sendStatus(403);
   jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
     if (err) return res.sendStatus(403);
-    const accessToken = generateAccessToken({ name: user.name });
+    const accessToken = generateAccessToken({
+      user: user?.name,
+      email: user?.email,
+    });
     res.json({ accessToken: accessToken });
   });
 });
